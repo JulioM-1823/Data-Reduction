@@ -257,29 +257,29 @@ def cross_image(im1, im2, **kwargs):
 
     return xshift, yshift
   
-  #######################################################################################################################################################################################################################################################################
+#######################################################################################################################################################################################################################################################################
   
-  def shift_image(image, xshift, yshift):
+def shift_image(image, xshift, yshift):
 
-    '''
-    PURPOSE: This function takes as input an image, and the x and y-shifts to be executed.  
-             It then performs this shift by using the np.roll() function which shifts each pixel in a specifced direction.  
-             The amount by which it is shifted depends on the inputs x-shift and y-shift.
+  '''
+  PURPOSE: This function takes as input an image, and the x and y-shifts to be executed.  
+           It then performs this shift by using the np.roll() function which shifts each pixel in a specifced direction.  
+           The amount by which it is shifted depends on the inputs x-shift and y-shift.
 
-    INPUTS:  image (np.array) -- Image to be shifted
-             xshift (float) -- Amount that the image will be shifted by in the x-direction
-             yshift (float) -- Amount that the image will be shifted by in the y-direction
+  INPUTS:  image (np.array) -- Image to be shifted
+           xshift (float) -- Amount that the image will be shifted by in the x-direction
+           yshift (float) -- Amount that the image will be shifted by in the y-direction
 
-    OUTPUT:  (np.array) -- Rolled image
+  OUTPUT:  (np.array) -- Rolled image
 
-    AUTHOR:  Connor E. Robinson
-    '''
+  AUTHOR:  Connor E. Robinson
+  '''
 
-    return np.roll(np.roll(image, int(yshift), axis = 1), int(xshift), axis = 0)
+  return np.roll(np.roll(image, int(yshift), axis = 1), int(xshift), axis = 0)
   
-  #######################################################################################################################################################################################################################################################################
+#######################################################################################################################################################################################################################################################################
   
-  def align_N_stack(targname, first_letter, dir, filter):
+def align_N_stack(targname, first_letter, dir, filter):
 
   '''
   PURPOSE: Align and stack fully reduced images that have been bias, dark, subtracted, and flat-fielded.
@@ -313,6 +313,7 @@ def cross_image(im1, im2, **kwargs):
   
   xshifts = {}
   yshifts = {}
+  
   for index, filename in enumerate(imlist):
       im, hdr = fits.getdata(filename, header = True)
       xshifts[index], yshifts[index] = cross_image(im1, im, boxsize = 1000)
@@ -416,4 +417,3 @@ def image_calibrator(targname, first_letter, dir, filter):
   return final_image
 
 #######################################################################################################################################################################################################################################################################
-
