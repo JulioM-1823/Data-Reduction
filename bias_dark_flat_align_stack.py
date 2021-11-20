@@ -14,7 +14,6 @@ from astropy.io import fits
 # Mount the Google drive
 from google.colab import drive
 drive.mount('/content/drive')
-%matplotlib inline
 
 ##############################################################################################################################################################################################
 
