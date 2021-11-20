@@ -423,6 +423,72 @@ def align_N_stack(targname, first_letter, dir, filter):
 
   return median_image
 
+##################################################################################################################################################################################
+
+def science_file_sorter(dir, source_first_letter, standard_first_letter):
+
+  '''
+  PURPOSE: Takes in the directory where all of the files taken reside, it then organizes the files by 
+           calibration type, filter, exposure time, and by source vs. standard type.
+
+  INPUTS:  dir (str) -- Directory where all the files reside
+           source_first_letter (str) -- The first letter(s) of the files taken for the primary source of interest
+           standard_first_letter (str) -- The first letter(s) of the files taken for the standard star
+  
+  OUTPUT:  Sorts all of the files into new directories
+
+  AUHTOR:  Julio M. Morales -- November 19, 2021
+  '''
+
+  # Compile all the files in the dir
+  all_files = glob.glob(dir + '*.fit')
+
+  # Organize by image type (bias vs. dark vs. flat vs. light)
+  for files in all_files:
+    header = fits.getheader(files)
+    file_type = header['IMAGETYP']
+    filesorter(files.split('/')[-1], dir, file_type)
+
+  # Compile all the dark frames
+  dark_files = glob.glob(dir + 'Dark Frame/*.fit')
+
+  # Sort the dark frames by exopsure times
+  for files in dark_files:
+    header = fits.getheader(files)
+    exp_time = header['EXPTIME']
+    filesorter(files.split('/')[-1], dir + 'Dark Frame/', str(exp_time))
+
+  # Compile all of the flat frames
+  flat_files = glob.glob(dir + 'Flat Field/*.fit')
+
+  # Sort the flat-frames by filter name
+  for files in flat_files:
+    header = fits.getheader(files)
+    filter = header['FILTER']
+    filesorter(files.split('/')[-1], dir + 'Flat Field/', filter)
+
+  # Compile science files of the source of interest
+  source_files = glob.glob(dir + 'Light Frame/' + source_first_letter + '*.fit')
+
+  # Sort the science frames by filter
+  for files in source_files:
+    filesorter(files.split('/')[-1], dir + 'Light Frame/', 'source')
+    header = fits.getheader(dir + 'Light Frame/source/' + files.split('/')[-1])
+    filter = header['FILTER']
+    filesorter(files.split('/')[-1], dir + 'Light Frame/source/', filter)
+
+  # Compile the science frames of the standard star
+  standard_files = glob.glob(dir + 'Light Frame/' + standard_first_letter + '*.fit')
+
+  # Organize the standard files by filter
+  for files in standard_files:
+    filesorter(files.split('/')[-1], dir + 'Light Frame/', 'standard')
+    header = fits.getheader(dir + 'Light Frame/standard/' + files.split('/')[-1])
+    filter = header['FILTER']
+    filesorter(files.split('/')[-1], dir + 'Light Frame/standard/', filter)
+
+  return
+
 #######################################################################################################################################################################################################################################################################
 
 def source_image_calibrator(targname, first_letter, dir, filter, is_standard = False):
