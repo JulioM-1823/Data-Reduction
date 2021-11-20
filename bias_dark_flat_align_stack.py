@@ -14,6 +14,43 @@ from astropy.io import fits
 # Mount the Google drive
 from google.colab import drive
 drive.mount('/content/drive')
+%matplotlib inline
+
+##############################################################################################################################################################################################
+
+def filesorter(filename, dir, foldername):
+
+  '''
+  PURPOSE: Checks if the directory  (dir + foldername + filename) exists, then creates the directory if it doesn't.
+
+  INPUTS:  filename (str) -- Name of the file
+           dir (str) -- Directory where you want things to be saved
+           foldername (str) -- Name of the folder you want to check/generate
+
+  OUTPUT:  Creates the specified folders
+
+  AUTHOR:  Connor E. Robinson
+  '''
+
+  # The statement checks to see if the file exists.
+  if os.path.exists(dir + filename):
+      pass
+  else:
+      print(dir + filename + " does not exist or has already been moved.")
+      return
+  
+  # If the foldername (input) doesn't exist, then it creates a new directory with the name foldername.
+  if os.path.exists(dir + foldername):
+      pass
+  else:
+      print("Making new directory: " + dir + foldername)
+      os.mkdir(dir + foldername)
+
+  # Move files to new folder
+  print('Moving ' + filename + ' to:  ' + dir + foldername + '/' + filename)
+  os.rename(dir + filename, dir + foldername + '/' + filename)
+
+  return
 
 #######################################################################################################################################################################################################################################################################
 
@@ -189,24 +226,29 @@ def master_frame_generator(first_letter, dir, filter):
   '''
 
   # Create master bias frame
-  master_bias = mediancombine(first_letter, dir + '/bias/')
-  fits.writeto(dir + 'bias/Master_Bias.fit', master_bias, overwrite = True)
+  master_bias = mediancombine(first_letter, dir + '/Bias Frame/')
+  fits.writeto(dir + 'Bias Frame/Master_Bias.fit', master_bias, overwrite = True)
+
+  # Get the exopsure time of the source frames to know which dark frames we need to use
+  science_files = glob.glob(dir + 'Light Frame/source/' + filter + '/*.fit')
+  header = fits.getheader(science_files[0])
+  exposure = str(header['EXPTIME'])
 
   # Bias subtract the dark frames, then create master dark
-  bias_subtract(first_letter, dir + 'bias/Master_Bias.fit', dir + 'dark/60s/')
-  master_dark = mediancombine('bias_subtracted_', dir + '/dark/60s/')
-  fits.writeto(dir + 'dark/60s/Master_Dark60s.fit', master_dark, overwrite = True)
+  bias_subtract(first_letter, dir + 'Bias Frame/Master_Bias.fit', dir + 'Dark Frame/' + exposure + '/')
+  master_dark = mediancombine('bias_subtracted_', dir + 'Dark Frame/' + exposure + '/')
+  fits.writeto(dir + 'Dark Frame/' + exposure + '/Master_Dark.fit', master_dark, overwrite = True)
 
   # Bias and dark subtract the flat frames, then create the master flat
-  bias_subtract(first_letter, dir + 'bias/Master_Bias.fit', dir + 'flat/' + filter + '/')
-  dark_subtract('bias_subtracted_', dir + 'dark/60s/Master_Dark60s.fit', dir + 'flat/' + filter + '/')
-  master_flat = mediancombine('dark_subtracted_', dir + '/flat/' + filter + '/')
-  fits.writeto(dir + 'flat/' + filter + '/Master_Flat.fit', master_flat, overwrite = True)
+  bias_subtract(first_letter, dir + 'Bias Frame/Master_Bias.fit', dir + 'Flat Field/' + filter + '/')
+  dark_subtract('bias_subtracted_', dir + 'Dark Frame/' + exposure + '/Master_Dark.fit', dir + 'Flat Field/' + filter + '/')
+  master_flat = mediancombine('dark_subtracted_', dir + 'Flat Field/' + filter + '/')
+  fits.writeto(dir + 'Flat Field/' + filter + '/Master_Flat.fit', master_flat, overwrite = True)
 
   # Define the pathways for each master frame
-  master_bias_path = dir + 'bias/Master_Bias.fit'
-  master_dark_path = dir + 'dark/60s/Master_Dark60s.fit'
-  master_flat_path = dir + 'flat/' + filter + '/Master_Flat.fit'
+  master_bias_path = dir + 'Bias Frame/Master_Bias.fit'
+  master_dark_path = dir + 'Dark Frame/' + exposure + '/Master_Dark.fit'
+  master_flat_path = dir + 'Flat Field/' + filter + '/Master_Flat.fit'
 
   return [master_bias_path, master_dark_path, master_flat_path]
 
@@ -261,21 +303,21 @@ def cross_image(im1, im2, **kwargs):
   
 def shift_image(image, xshift, yshift):
 
-  '''
-  PURPOSE: This function takes as input an image, and the x and y-shifts to be executed.  
-           It then performs this shift by using the np.roll() function which shifts each pixel in a specifced direction.  
-           The amount by which it is shifted depends on the inputs x-shift and y-shift.
+    '''
+    PURPOSE: This function takes as input an image, and the x and y-shifts to be executed.  
+             It then performs this shift by using the np.roll() function which shifts each pixel in a specifced direction.  
+             The amount by which it is shifted depends on the inputs x-shift and y-shift.
 
-  INPUTS:  image (np.array) -- Image to be shifted
-           xshift (float) -- Amount that the image will be shifted by in the x-direction
-           yshift (float) -- Amount that the image will be shifted by in the y-direction
+    INPUTS:  image (np.array) -- Image to be shifted
+             xshift (float) -- Amount that the image will be shifted by in the x-direction
+             yshift (float) -- Amount that the image will be shifted by in the y-direction
 
-  OUTPUT:  (np.array) -- Rolled image
+    OUTPUT:  (np.array) -- Rolled image
 
-  AUTHOR:  Connor E. Robinson
-  '''
+    AUTHOR:  Connor E. Robinson
+    '''
 
-  return np.roll(np.roll(image, int(yshift), axis = 1), int(xshift), axis = 0)
+    return np.roll(np.roll(image, int(yshift), axis = 1), int(xshift), axis = 0)
   
 #######################################################################################################################################################################################################################################################################
   
@@ -313,7 +355,6 @@ def align_N_stack(targname, first_letter, dir, filter):
   
   xshifts = {}
   yshifts = {}
-  
   for index, filename in enumerate(imlist):
       im, hdr = fits.getdata(filename, header = True)
       xshifts[index], yshifts[index] = cross_image(im1, im, boxsize = 1000)
@@ -385,7 +426,7 @@ def align_N_stack(targname, first_letter, dir, filter):
 
 #######################################################################################################################################################################################################################################################################
 
-def image_calibrator(targname, first_letter, dir, filter):
+def source_image_calibrator(targname, first_letter, dir, filter, is_standard = False):
 
   '''
   PURPOSE:  To bias subtract, dark-subtract, and flatfield a set of images in a given filter all in one step.
@@ -403,17 +444,55 @@ def image_calibrator(targname, first_letter, dir, filter):
   master_frames = master_frame_generator(first_letter, dir, filter)
 
   # Bias subtract the science frames
-  bias_subtract(first_letter, master_frames[0], dir + 'science/' + filter + '/')
+  bias_subtract(first_letter, master_frames[0], dir + 'Light Frame/source/' + filter + '/')
 
   # Dark subtract the bias subtracted frames
-  dark_subtract('bias_subtracted_', master_frames[1], dir + 'science/' + filter + '/')
+  dark_subtract('bias_subtracted_', master_frames[1], dir + 'Light Frame/source/' + filter + '/')
 
   # Flat-field the bias and dark subtracted frames
-  flat_field('dark_subtracted_', master_frames[2], dir + 'science/' + filter + '/')
+  flat_field('dark_subtracted_', master_frames[2], dir + 'Light Frame/source/' + filter + '/')
 
   # Align and stack the reduced images
-  final_image = align_N_stack(targname, 'flat_fielded_', dir + 'science/', filter)
-
-  return final_image
+  fully_reduced_image = align_N_stack(targname, 'flat_fielded_', dir + 'Light Frame/source/', filter)
+  
+  return fully_reduced_image
 
 #######################################################################################################################################################################################################################################################################
+
+def standard_image_calibrator(targname, first_letter, dir, filter):
+
+  '''
+  PURPOSE:  To bias subtract, dark-subtract, and flat-field a set of images in a given filter all in one step.
+
+  IMPUTS:   first_letter (str) -- First letter(s) of the files to be reduced
+            dir (str) -- Directory of files to be calibrated
+            filter (str) Name of the filter the frames were taken in
+
+  OUTPUT:   final_image (np.array) Fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
+
+  AUTHOR:  Julio M. Morales -- November 01, 2021
+  '''
+
+  # Get the exopsure time of the source frames to know which dark frames we need to use
+  science_files = glob.glob(dir + 'Light Frame/source/' + filter + '/*.fit')
+  header = fits.getheader(science_files[0])
+  exposure = str(header['EXPTIME'])
+
+  # Generate master frames
+  master_bias_path = dir + 'Bias Frame/Master_Bias.fit'
+  master_dark_path = dir + 'Dark Frame/' + exposure + '/Master_Dark.fit'
+  matster_flat_path = dir + 'Flat Field/' + filter + '/Master_Flat.fit'
+
+  # Bias subtract the science frames
+  bias_subtract(first_letter, master_bias_path, dir + 'Light Frame/standard/' + filter + '/')
+
+  # Dark subtract the bias subtracted frames
+  dark_subtract('bias_subtracted_', master_dark_path, dir + 'Light Frame/standard/' + filter + '/')
+
+  # Flat-field the bias and dark subtracted frames
+  flat_field('dark_subtracted_', matster_flat_path, dir + 'Light Frame/standard/' + filter + '/')
+
+  # Align and stack the reduced images
+  fully_reduced_standard_image = align_N_stack(targname, 'flat_fielded_', dir + 'Light Frame/standard/', filter)
+
+  return fully_reduced_standard_image
