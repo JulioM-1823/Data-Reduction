@@ -68,7 +68,7 @@ def mediancombine(first_letter, dir):
           dir:           [string]  Directory that contains the images to be median combined
 
   RETURNS:  
-          med_frame:     [np.array, float] Median combined image
+          med_frame:  [np.array, float] Median combined image
 
   AUTHOR:
           Julio M. Morales, October 15, 2021
@@ -342,7 +342,7 @@ def shift_image(image, xshift, yshift):
             yshift: [float]            Amount that the image will be shifted by in the y-direction
 
     RETURNS: 
-                    [np.array, float]  Rolled image
+            [np.array, float]  Rolled image
 
     AUTHOR:
             Connor E. Robinson
