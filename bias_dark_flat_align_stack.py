@@ -68,7 +68,7 @@ def mediancombine(first_letter, dir):
           dir:           [string]  Directory that contains the images to be median combined
 
   RETURNS:  
-          med_frame: [np.array, float] Median combined image
+          med_frame:     [np.array, float] Median combined image
 
   AUTHOR:
           Julio M. Morales, October 15, 2021
@@ -235,9 +235,9 @@ def master_frame_generator(first_letter, dir, filter):
           To bias subtract, dark-subtract, and flatfield a set of images in a given filter all in one step.
 
   INPUTS:   
-          first_letter: [string]  First letter(s) of the files to be reduced
-          dir:          [string]  Directory of files to be calibrated
-          filter:       [string]  Name of the filter the frames were taken in
+          first_letter:      [string]  First letter(s) of the files to be reduced
+          dir:               [string]  Directory of files to be calibrated
+          filter:            [string]  Name of the filter the frames were taken in
 
   RETURNS:  
           master_bias_path:  [string]  Path to the master bias frame
@@ -286,9 +286,9 @@ def cross_image(im1, im2, **kwargs):
             It then calculates the shifts required for alignment by comparing peak pixel value locations.
 
     INPUTS:  
-            im1:       [np.array, float]  First image to be cross correlated
-            im2:       [np.array, float]  Second image to be cross correlated
-            **kwargs:  [list]             Variable-length keyword list
+            im1:             [np.array, float]  First image to be cross correlated
+            im2:             [np.array, float]  Second image to be cross correlated
+            **kwargs:        [list]             Variable-length keyword list
 
     RETURNS:  
             xshift, yshift:  [list, float]  x and y shifts required to align the images
@@ -342,7 +342,7 @@ def shift_image(image, xshift, yshift):
             yshift: [float]            Amount that the image will be shifted by in the y-direction
 
     RETURNS: 
-            [np.array, float] Rolled image
+                    [np.array, float]  Rolled image
 
     AUTHOR:
             Connor E. Robinson
@@ -543,7 +543,7 @@ def source_image_calibrator(targname, first_letter, dir, filter, is_standard = F
           filter:        [string]  Name of the filter the frames were taken in
 
   RETURNS:
-          final_image:   [np.array, float] Fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
+          final_image:   [np.array, float]  Fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
 
   AUTHOR:
           Julio M. Morales, November 01, 2021
