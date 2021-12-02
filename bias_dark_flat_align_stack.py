@@ -438,6 +438,17 @@ def align_N_stack(targname, first_letter, dir, filter):
       im, hdr = fits.getdata(filename, header = True)
       xshifts_filt[index], yshifts_filt[index] = cross_image(im1, im, boxsize = 1000)
       image_stack[:, :, index] = shift_image(im, xshifts_filt[index], yshifts_filt[index])
+      
+      
+      
+      
+      # Save the final stacked images into your new folder
+      fits.writeto(dir + targname + '_' + filter + 'aligned.fits', image_stack, overwrite = True)
+      print('   Wrote FITS file ', targname + '_' + filter + 'aligned.fits', 'in ', dir, '\n')
+      print('\n Done Aligning!')
+      
+      
+      
 
   # Take the median of the image stack while maintaing the dimensions of the array
   median_image = np.median(image_stack, axis = -1)
