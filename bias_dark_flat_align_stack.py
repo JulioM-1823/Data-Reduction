@@ -517,7 +517,7 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter, is_stan
     filter = header['FILTER']
     filesorter(files.split('/')[-1], dir + 'Light Frame/source/', filter)
 
-   if (is_standard == True):
+  if (is_standard == True):
 
     # Compile the science frames of the standard star
     standard_files = glob.glob(dir + 'Light Frame/' + standard_first_letter + '*.fit')
@@ -529,7 +529,7 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter, is_stan
       filter = header['FILTER']
       filesorter(files.split('/')[-1], dir + 'Light Frame/standard/', filter)
 
-   else:
+  else:
      pass
 
     return
