@@ -461,7 +461,7 @@ def align_N_stack(targname, first_letter, dir, filter):
 
 ##################################################################################################################################################################################
 
-def science_file_sorter(dir, source_first_letter, standard_first_letter):
+def science_file_sorter(dir, source_first_letter, standard_first_letter, is_standard = False):
 
   '''
   PURPOSE: 
@@ -517,6 +517,8 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter):
     filter = header['FILTER']
     filesorter(files.split('/')[-1], dir + 'Light Frame/source/', filter)
 
+ if (is_standard == True):
+
   # Compile the science frames of the standard star
   standard_files = glob.glob(dir + 'Light Frame/' + standard_first_letter + '*.fit')
 
@@ -526,6 +528,9 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter):
     header = fits.getheader(dir + 'Light Frame/standard/' + files.split('/')[-1])
     filter = header['FILTER']
     filesorter(files.split('/')[-1], dir + 'Light Frame/standard/', filter)
+
+ else:
+   pass
 
   return
 
