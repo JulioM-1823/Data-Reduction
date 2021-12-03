@@ -693,4 +693,5 @@ def align(targname, first_letter, dir):
     fits.writeto(dir + targname + '_' + filter + ' aligned.fits', image_stack[:, :, index], overwrite = True)
     print('   Wrote FITS file ', targname + '_' + filter + 'aligned.fits', 'in ', dir, '\n')
     print('\n Done stacking!')
+    
   return
