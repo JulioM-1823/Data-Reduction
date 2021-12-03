@@ -685,7 +685,7 @@ def align(targname, first_letter, dir):
 
     im, hdr = fits.getdata(filename, header = True)
 
-    filter = hdr['Filter']
+    filter = hdr['FILTER']
     xshifts_filt[index], yshifts_filt[index] = cross_image(im1, im, boxsize = 1000)
     image_stack[:, :, index] = shift_image(im, xshifts_filt[index], yshifts_filt[index])   
 
