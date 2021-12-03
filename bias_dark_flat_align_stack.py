@@ -614,3 +614,83 @@ def standard_image_calibrator(targname, first_letter, dir, filter):
   fully_reduced_standard_image = align_N_stack(targname, 'flat_fielded_', dir + 'Light Frame/standard/', filter)
 
   return fully_reduced_standard_image
+
+def align(targname, first_letter, dir, filter):
+
+  '''
+  PURPOSE: 
+          Align and stack fully reduced images that have been bias, dark, subtracted, and flat-fielded.
+  INPUTS:  
+          targname:      [string]  Name of the object your imaging
+          first_letter:  [string]  First letter(s) of the files you will be aligning and stacking
+          dir:           [string]  Directory where your fully reduced images are
+          filter:        [string]  Filter of the images you want to reduce
+  RETURNS:
+          median_image:  [np.array, float]  Aligned and stacked images saved into a new foder named 'stacked' in the directory 'dir'
+  AUTHOR:  
+          Connor E. Robinson
+  '''
+
+  # Using glob, make list of all reduced images of current target in all filters.
+  # Complete the following line to create a list of the correct images to be shifted (use wildcards!):
+  imlist = glob.glob(dir + 'Light Frame/source/stacked*.fit')
+
+  # Check to make sure that your new list has the right files:
+  print("All files to be aligned: \n", imlist)
+  print('\n') # adding some space to the print statements, '/n' means new line
+  
+  # Open first image = master image; all other images of same target will be aligned to this one.
+  im1, hdr1 = fits.getdata(imlist[0], header = True)
+  print("Aligning all images to:", imlist[0])
+  
+  print('\n') # adding some space to the print statements
+
+  # What is the following for loop doing?
+  # Your answer:  The loop takes every pixel in a given indexed location and shifts them for the master image
+  
+  xshifts = {}
+  yshifts = {}
+
+  for index, filename in enumerate(imlist):
+      im, hdr = fits.getdata(filename, header = True)
+      xshifts[index], yshifts[index] = cross_image(im1, im, boxsize = 1000)
+      print("Shift for image", index, "is", xshifts[index], yshifts[index])
+
+  # Calculate trim edges of new median stacked images so all stacked images of each target have same size 
+  max_x_shift = int(np.max([xshifts[x] for x in xshifts.keys()]))
+  max_y_shift = int(np.max([yshifts[x] for x in yshifts.keys()]))
+
+  print('   Max x - shift = {0}, max y - shift = {1} (pixels)'.format(max_x_shift,max_y_shift))
+  
+
+  scilist = imlist
+
+
+
+  if len(scilist) < 1:
+    print("Warning! No files in scilist. Your path is likely incorrect.")
+  
+  
+  nfiles = len(scilist)
+  print('Aligning ', nfiles, ' science frames')
+
+  # Define new array with same size as master image
+  image_stack = np.zeros([im1.shape[0], im1.shape[1], len(scilist)])
+
+  xshifts_filt = {}
+  yshifts_filt = {}
+
+  # This loop completes the shifts for the rest of the images in relation to the master image
+  for index, filename in enumerate(scilist):
+
+    im, hdr = fits.getdata(filename, header = True)
+
+    filter = hdr['Filter']
+    xshifts_filt[index], yshifts_filt[index] = cross_image(im1, im, boxsize = 1000)
+    image_stack[:, :, index] = shift_image(im, xshifts_filt[index], yshifts_filt[index])   
+
+    # Save the final stacked images into your new folder
+    fits.writeto(dir + targname + '_' + filter + ' aligned.fits', image_stack[:, :, index], overwrite = True)
+    print('   Wrote FITS file ', targname + '_' + filter + 'aligned.fits', 'in ', dir, '\n')
+    print('\n Done stacking!')
+  return
