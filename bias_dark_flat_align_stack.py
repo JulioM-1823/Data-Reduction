@@ -633,7 +633,7 @@ def align(targname, first_letter, dir):
 
   # Using glob, make list of all reduced images of current target in all filters.
   # Complete the following line to create a list of the correct images to be shifted (use wildcards!):
-  imlist = glob.glob(dir + 'Light Frame/source/stacked/*.fit')
+  imlist = glob.glob(dir + 'Light Frame/source/stacked/*.fits')
 
   # Check to make sure that your new list has the right files:
   print("All files to be aligned: \n", imlist)
