@@ -615,7 +615,7 @@ def standard_image_calibrator(targname, first_letter, dir, filter):
 
   return fully_reduced_standard_image
 
-def align(targname, first_letter, dir, filter):
+def align(targname, first_letter, dir):
 
   '''
   PURPOSE: 
