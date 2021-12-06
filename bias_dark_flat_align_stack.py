@@ -22,15 +22,12 @@ def filesorter(filename, dir, foldername):
   '''
   PURPOSE: 
           Checks if the directory  (dir + foldername + filename) exists, then creates the directory if it doesn't.
-
   INPUTS:  
           filename:   [string] Name of the file
           dir:        [string] Directory where you want things to be saved
           foldername: [string] Name of the folder you want to check/generate
-
   RETURNS:  
           Creates the specified folders.
-
   AUTHOR:
           Connor E. Robinson
   '''
@@ -62,14 +59,11 @@ def mediancombine(first_letter, dir):
   '''
   PURPOSE: 
           Median combine all the images in the list fed to the function (ONLY COMBINE ONE SET OF FRAMES AT A TIME)
-
   INPUTS:  
           first_letter:  [string]  First letter(s) of the files to be combined
           dir:           [string]  Directory that contains the images to be median combined
-
   RETURNS:  
           med_frame:  [np.array, float] Median combined image
-
   AUTHOR:
           Julio M. Morales, October 15, 2021
   '''
@@ -87,16 +81,29 @@ def mediancombine(first_letter, dir):
   imsize_y, imsize_x = first_frame_data.shape
   
   # Makes n amount of arrays of zeros x by y size
-  fits_stack = np.zeros((imsize_y, imsize_x , n))   
-  
-  # Iterate through n and assign image to the array
-  for ii in range(0, n):  
-  
-      im = fits.getdata(files[ii])
-      fits_stack[:,:,ii] = im
-      
-  # Takes the median of the stacked files and combines them
-  med_frame = np.median(fits_stack, axis = 2)
+  fits_stack = np.zeros((imsize_y, imsize_x , n))
+
+  if (first_letter == 'dark_subtracted_'):
+
+    for ii in range(0, n):
+
+        im = fits.getdata(filelist[ii])
+        norm_im =  im/np.median(im) # finish new line here to normalize flats
+        fits_stack[:,:,ii] = norm_im
+        
+    # Add your own comment describing this step    
+    med_frame = np.median(fits_stack, axis = 2)
+
+  else:
+
+    # Iterate through n and assign image to the array
+    for ii in range(0, n):  
+    
+        im = fits.getdata(files[ii])
+        fits_stack[:,:,ii] = im
+        
+    # Takes the median of the stacked files and combines them
+    med_frame = np.median(fits_stack, axis = 2)
 
   return med_frame
 
@@ -107,7 +114,6 @@ def bias_subtract(first_letter, master_bias_path, dir):
   '''
   PURPOSE: 
           This function takes science images and subtracts the master bias image from them, and writes the result to a new fits file.
-
   INPUTS:
           filename:          [string]  Name of the files to be bias subtracted
           master_bias_path:  [string]  Pathway to the master bias image
@@ -115,7 +121,6 @@ def bias_subtract(first_letter, master_bias_path, dir):
   
   RETURNS:
           Writes .fit file to the specified directory
-
   AUTHOR:
           Julio M. Morales, October 27, 2021
   '''
@@ -149,7 +154,6 @@ def dark_subtract(first_letter, master_dark_path, dir):
   '''
   PURPOSE: 
           This function takes science images, subtracts the master dark image from them, and writes the result to a new fits file.
-
   INPUTS:  
           filename:          [string]  Name of the files to be dark subtracted
           master_dark_path:  [string]  Pathway to the master dark image
@@ -157,7 +161,6 @@ def dark_subtract(first_letter, master_dark_path, dir):
   
   RETURNS:
           Writes .fit file to the specified directory
-
   AUTHOR:
           Julio M. Morales, October 27, 2021
   '''
@@ -191,7 +194,6 @@ def flat_field(first_letter, master_flat_path, dir):
   '''
   PURPOSE: 
           This function takes science images, divides them by the master flat image, and writes the result to a new fits file.
-
   INPUTS:  
           filename:          [string]  Name of the files to be flat-fielded
           master_flat_path:  [string]  Pathway to the master flat image
@@ -199,7 +201,6 @@ def flat_field(first_letter, master_flat_path, dir):
   
   RETURNS:
           Writes .fit file to the specified directory
-
   AUTHOR:
           Julio M. Morales, October 27, 2021
   '''
@@ -233,17 +234,14 @@ def master_frame_generator(first_letter, dir, filter):
   '''
   PURPOSE:  
           To bias subtract, dark-subtract, and flatfield a set of images in a given filter all in one step.
-
   INPUTS:   
           first_letter:      [string]  First letter(s) of the files to be reduced
           dir:               [string]  Directory of files to be calibrated
           filter:            [string]  Name of the filter the frames were taken in
-
   RETURNS:  
           master_bias_path:  [string]  Path to the master bias frame
           master_dark_path:  [string]  Path to the master dark frame
           master_flat_path:  [string]  Path to the master flat frame
-
   AUTHOR:  
           Julio M. Morales, November 01, 2021
   '''
@@ -284,15 +282,12 @@ def cross_image(im1, im2, **kwargs):
             This function performs cross-correlation by slicing each image, and subtracting the 
             mean of each image from itself.  It then performs a fast--fourier transform on the images.  
             It then calculates the shifts required for alignment by comparing peak pixel value locations.
-
     INPUTS:  
             im1:             [np.array, float]  First image to be cross correlated
             im2:             [np.array, float]  Second image to be cross correlated
             **kwargs:        [list]             Variable-length keyword list
-
     RETURNS:  
             xshift, yshift:  [list, float]  x and y shifts required to align the images
-
     AUTHOR:  
             Connor E. Robinson
     """
@@ -335,15 +330,12 @@ def shift_image(image, xshift, yshift):
             This function takes as input an image, and the x and y-shifts to be executed.  
             It then performs this shift by using the np.roll() function which shifts each pixel in a specifced direction.  
             The amount by which it is shifted depends on the inputs x-shift and y-shift.
-
     INPUTS:
             image:  [np.array, float]  Image to be shifted
             xshift: [float]            Amount that the image will be shifted by in the x-direction
             yshift: [float]            Amount that the image will be shifted by in the y-direction
-
     RETURNS: 
             [np.array, float]  Rolled image
-
     AUTHOR:
             Connor E. Robinson
     '''
@@ -357,16 +349,13 @@ def align_N_stack(targname, first_letter, dir, filter):
   '''
   PURPOSE: 
           Align and stack fully reduced images that have been bias, dark, subtracted, and flat-fielded.
-
   INPUTS:  
           targname:      [string]  Name of the object your imaging
           first_letter:  [string]  First letter(s) of the files you will be aligning and stacking
           dir:           [string]  Directory where your fully reduced images are
           filter:        [string]  Filter of the images you want to reduce
-
   RETURNS:
           median_image:  [np.array, float]  Aligned and stacked images saved into a new foder named 'stacked' in the directory 'dir'
-
   AUTHOR:  
           Connor E. Robinson
   '''
@@ -467,7 +456,6 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter, is_stan
   PURPOSE: 
           Takes in the directory where all of the files taken reside, it then organizes the files by 
           calibration type, filter, exposure time, and by source vs. standard type.
-
   INPUTS:  
           dir:                    [string]  Directory where all the files reside
           source_first_letter:    [string]  The first letter(s) of the files taken for the primary source of interest
@@ -475,7 +463,6 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter, is_stan
   
   RETURNS:
           Sorts all of the files into new directories.
-
   AUHTOR:
           Julio M. Morales, November 19, 2021
   '''
@@ -541,15 +528,12 @@ def source_image_calibrator(targname, first_letter, dir, filter, is_standard = F
   '''
   PURPOSE:
           To bias subtract, dark-subtract, and flatfield a set of images in a given filter all in one step.
-
   IMPUTS:
           first_letter:  [string]  First letter(s) of the files to be reduced
           dir:           [string]  Directory of files to be calibrated
           filter:        [string]  Name of the filter the frames were taken in
-
   RETURNS:
           final_image:   [np.array, float]  Fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
-
   AUTHOR:
           Julio M. Morales, November 01, 2021
   '''
@@ -578,15 +562,12 @@ def standard_image_calibrator(targname, first_letter, dir, filter):
   '''
   PURPOSE:  
           To bias subtract, dark-subtract, and flat-field a set of images in a given filter all in one step.
-
   IMPUTS:   
           first_letter:  [string]  First letter(s) of the files to be reduced
           dir:           [string]  Directory of files to be calibrated
           filter:        [string]  Name of the filter the frames were taken in
-
   RETURNS:   
           final_image:   [np.array, float]  Fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
-
   AUTHOR:  
           Julio M. Morales, November 01, 2021
   '''
@@ -662,10 +643,7 @@ def align(targname, first_letter, dir):
 
   print('   Max x - shift = {0}, max y - shift = {1} (pixels)'.format(max_x_shift,max_y_shift))
   
-
   scilist = imlist
-
-
 
   if len(scilist) < 1:
     print("Warning! No files in scilist. Your path is likely incorrect.")
