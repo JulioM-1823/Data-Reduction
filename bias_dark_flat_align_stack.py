@@ -1,36 +1,49 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import glob
 import scipy
 import scipy.signal
-import os 
-import glob 
 import scipy.ndimage.interpolation as interp
+from scipy.optimize import curve_fit
+from scipy.ndimage.filters import gaussian_filter
+import os.path
+import os 
+import astropy.stats as stat
 from astropy.visualization import ZScaleInterval
 from astropy.stats import sigma_clipped_stats
-from scipy.ndimage.filters import gaussian_filter
 from astropy.io import fits 
+from astropy import stats
+from astropy.stats import mad_std
+from astropy.stats import sigma_clip
+from PIL import Image
+
+!pip install photutils
+from photutils.utils import calc_total_error
+from photutils import aperture_photometry, CircularAperture, CircularAnnulus, DAOStarFinder
+
+!pip install astroalign
+import astroalign as aa
+
+%matplotlib inline
 
 # Mount the Google drive
 from google.colab import drive
-drive.mount('/content/drive')
+drive.mount('/content/drive') 
 
-##############################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def filesorter(filename, dir, foldername):
 
     '''
     PURPOSE: 
             Checks if the directory (dir + foldername + filename) exists, then creates the directory if it doesn't.
-
     INPUTS:  
-            filename:  [string] Name of the file
-                dir:  [string] Directory where you want things to be saved
-        foldername:  [string] Name of the folder you want to check/generate
-
+            [filename]:  (string) Name of the file
+                 [dir]:  (string) Directory where you want things to be saved
+          [foldername]:  (string) Name of the folder you want to check/generate
     RETURNS:  
             Creates the specified folders.
-
     AUTHOR:
             Connor E. Robinson
     '''
@@ -55,21 +68,18 @@ def filesorter(filename, dir, foldername):
 
     return
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def mediancombine(first_letter, dir):
 
     '''
     PURPOSE: 
             Median combine all the images in the directory 'dir' that start with the letter 'first_letter'.
-
     INPUTS:  
-            first_letter:  [string]  First letter(s) of the files to be combined
-                     dir:  [string]  Directory that contains the images to be median combined
-
+            [first_letter]:  (string)  First letter(s) of the files to be combined
+                     [dir]:  (string)  Directory that contains the images to be median combined
     RETURNS:  
-               med_frame:  [np.array, float] Median combined image
-
+               [med_frame]:  [np.array, float] Median combined image
     AUTHOR:
             Julio M. Morales, October 15, 2021
     '''
@@ -119,22 +129,20 @@ def mediancombine(first_letter, dir):
 
     return med_frame
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def bias_subtract(first_letter, master_bias_path, dir):
   
     '''
     PURPOSE: 
             Bias subtract all the images in the directory 'dir' that start with the letter 'first_letter' using the master bias frame.
-
     INPUTS:
-                first_letter:  [string]  First letter(s) of the files to be bias subtracted
-            master_bias_path:  [string]  Pathway to the master bias image
-                         dir:  [string]  Directory of files to be calibrated
+                [first_letter]:  (string)  First letter(s) of the files to be bias subtracted
+            [master_bias_path]:  (string)  Pathway to the master bias image
+                         [dir]:  (string)  Directory of files to be calibrated
   
     RETURNS:
             Writes .fit file to the specified directory
-
     AUTHOR:
             Julio M. Morales, October 27, 2021
     '''
@@ -161,22 +169,19 @@ def bias_subtract(first_letter, master_bias_path, dir):
 
     return
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def dark_subtract(first_letter, master_dark_path, dir):
   
     '''
     PURPOSE: 
             Dark subtract all the images in the directory 'dir' that start with the letter 'first_letter' using the master dark frame.
-
     INPUTS:  
-                first_letter:  [string]  First letter(s) of the files to be dark subtracted
-            master_dark_path:  [string]  Pathway to the master dark image
-                         dir:  [string]  Directory of files to be calibrated
-
+                [first_letter]:  (string)  First letter(s) of the files to be dark subtracted
+            [master_dark_path]:  (string)  Pathway to the master dark image
+                         [dir]:  (string)  Directory of files to be calibrated
     RETURNS:
             Writes .fit file to the specified directory
-
     AUTHOR:
             Julio M. Morales, October 27, 2021
     '''
@@ -203,22 +208,19 @@ def dark_subtract(first_letter, master_dark_path, dir):
 
     return
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def flat_field(first_letter, master_flat_path, dir):
   
     '''
     PURPOSE: 
             Flat-field all the images in the directory 'dir' that start with the letter 'first_letter' using the master flat frame.
-
     INPUTS:  
-                first_letter:  [string]  First letter(s) of the files to be flat-fielded
-            master_flat_path:  [string]  Pathway to the master flat image
-                         dir:  [string]  Directory of files to be calibrated
-
+                [first_letter]:  (string)  First letter(s) of the files to be flat-fielded
+            [master_flat_path]:  (string)  Pathway to the master flat image
+                         [dir]:  (string)  Directory of files to be calibrated
     RETURNS:
             Writes .fit file to the specified directory
-
     AUTHOR:
             Julio M. Morales, October 27, 2021
     '''
@@ -245,24 +247,21 @@ def flat_field(first_letter, master_flat_path, dir):
 
     return
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def master_frame_generator(first_letter, dir, filter):
 
     '''
     PURPOSE:  
             To bias-subtract, dark-subtract, and flat-field all the images in the directory 'dir' that start with the letter 'first_letter'.
-
     INPUTS:   
-            first_letter:  [string]  First letter(s) of the files to be reduced
-                     dir:  [string]  Directory of files to be calibrated
-                  filter:  [string]  Name of the filter the frames were taken in
-
+            [first_letter]:  (string)  First letter(s) of the files to be reduced
+                     [dir]:  (string)  Directory of files to be calibrated
+                  [filter]:  (string)  Name of the filter the frames were taken in
     RETURNS:  
-            master_bias_path:  [string]  Path to the master bias frame
-            master_dark_path:  [string]  Path to the master dark frame
-            master_flat_path:  [string]  Path to the master flat frame
-
+            [master_bias_path]:  (string)  Path to the master bias frame
+            [master_dark_path]:  (string)  Path to the master dark frame
+            [master_flat_path]:  (string)  Path to the master flat frame
     AUTHOR:  
             Julio M. Morales, November 01, 2021
     '''
@@ -294,7 +293,7 @@ def master_frame_generator(first_letter, dir, filter):
 
     return [master_bias_path, master_dark_path, master_flat_path]
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def cross_image(im1, im2, **kwargs):
 
@@ -303,15 +302,12 @@ def cross_image(im1, im2, **kwargs):
             This function performs cross-correlation by slicing each image, and subtracting the 
             mean of each image from itself.  It then performs a fast--fourier transform on the images.  
             It then calculates the shifts required for alignment by comparing peak pixel value locations.
-
     INPUTS:  
-                 im1:  [np.array, float]  First image to be cross correlated
-                 im2:  [np.array, float]  Second image to be cross correlated
-            **kwargs:  [list]             Variable-length keyword list
-
+                 [im1]:  (np.array, float)  First image to be cross correlated
+                 [im2]:  (np.array, float)  Second image to be cross correlated
+            [**kwargs]:  (list)             Variable-length keyword list
     RETURNS:  
-            xshift, yshift:  [list, float]  x and y shifts required to align the images
-
+            [xshift, yshift]:  (list, float)  x and y shifts required to align the images
     AUTHOR:  
             Connor E. Robinson
     '''
@@ -346,7 +342,7 @@ def cross_image(im1, im2, **kwargs):
 
     return xshift, yshift
   
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
   
 def shift_image(image, xshift, yshift):
 
@@ -355,38 +351,33 @@ def shift_image(image, xshift, yshift):
             This function takes as input an image, and the x and y-shifts to be executed.  
             It then performs this shift by using the np.roll() function which shifts each pixel in a specifced direction.  
             The amount by which it is shifted depends on the inputs x-shift and y-shift.
-
     INPUTS:
-             image:  [np.array, float]  Image to be shifted
-            xshift:  [float]            Amount that the image will be shifted by in the x-direction
-            yshift:  [float]            Amount that the image will be shifted by in the y-direction
-
+             [image]:  (np.array, float)  Image to be shifted
+            [xshift]:  (float)            Amount that the image will be shifted by in the x-direction
+            [yshift]:  (float)            Amount that the image will be shifted by in the y-direction
     RETURNS: 
             [np.array, float]  Rolled image
-
     AUTHOR:
             Connor E. Robinson
     '''
 
+    # Roll the image using the input shifts wwhile maintaning the shape of the array
     return np.roll(np.roll(image, int(yshift), axis = 1), int(xshift), axis = 0)
   
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
   
-def align_N_stack(targname, first_letter, dir, filter, padding_size = 100):
+def align_N_stack(targname, first_letter, dir, filter):
 
     '''
     PURPOSE: 
             Align and stack fully reduced images that have been bias and dark-subtracted, and flat-fielded.
-
     INPUTS:  
-                targname:  [string]  Name of the object your imaging
-            first_letter:  [string]  First letter(s) of the files you will be aligning and stacking
-                     dir:  [string]  Directory where your fully reduced images are
-                  filter:  [string]  Filter of the images you want to reduce
-
+                [targname]:  (string)  Name of the object your imaging
+            [first_letter]:  (string)  First letter(s) of the files you will be aligning and stacking
+                     [dir]:  (string)  Directory where your fully reduced images are
+                  [filter]:  (string)  Filter of the images you want to reduce
     RETURNS:
-            median_image:  [np.array, float]  Aligned and stacked images saved into a new foder named 'stacked' in the directory 'dir'.
-
+            [median_image]:  (np.array, float)  Aligned and stacked images saved into a new foder named 'stacked' in the directory 'dir'.
     AUTHOR:  
             Connor E. Robinson
     '''
@@ -400,9 +391,6 @@ def align_N_stack(targname, first_letter, dir, filter, padding_size = 100):
 
     # Open first image = master image; all other images of same target will be aligned to this one.
     im1, hdr1 = fits.getdata(imlist[0], header = True)
-
-    # Pad the first image
-    im1 = np.pad(im1, pad_width = padding_size, mode = 'constant', constant_values = np.nan)
     print("Aligning all images to:", imlist[0])
     print('\n')
 
@@ -413,12 +401,9 @@ def align_N_stack(targname, first_letter, dir, filter, padding_size = 100):
 
         # Pull the data from the images
         im, hdr = fits.getdata(filename, header = True)
-
-        # Pad each image with NaN's
-        im_pad = np.pad(im, pad_width = padding_size, mode = 'constant', constant_values = np.nan)
-
+        
         # Shift the images using the cross-correlation method
-        xshifts[index], yshifts[index] = cross_image(im1, im_pad, boxsize = 1000)
+        xshifts[index], yshifts[index] = cross_image(im1, im, boxsize = 1000)
         print("Shift for image", index, "is", xshifts[index], yshifts[index])
 
     # Calculate trim edges of new median stacked images so all stacked images of each target have same size 
@@ -471,14 +456,11 @@ def align_N_stack(targname, first_letter, dir, filter, padding_size = 100):
         # Pull the data and header info
         im, hdr = fits.getdata(filename, header = True)
 
-        # Pad the image with NaN's
-        im_pad = np.pad(im, pad_width = padding_size, mode = 'constant', constant_values = np.nan)
-
         # Shift the images using the cross-correlation method
-        xshifts_filt[index], yshifts_filt[index] = cross_image(im1, im_pad, boxsize = 1000)
+        xshifts_filt[index], yshifts_filt[index] = cross_image(im1, im, boxsize = 1000)
 
         # Shift the images
-        image_stack[:, :, index] = shift_image(im_pad, xshifts_filt[index], yshifts_filt[index])      
+        image_stack[:, :, index] = shift_image(im, xshifts_filt[index], yshifts_filt[index])      
 
     # Take the median of the image stack while maintaing the dimensions of the array
     median_image = np.median(image_stack, axis = -1)
@@ -502,108 +484,98 @@ def align_N_stack(targname, first_letter, dir, filter, padding_size = 100):
 
     return median_image
 
-##################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
-def align(targname, dir, standard = False):
+def align_filters(dir, targname, sigma = 4, standard = False):
 
     '''
-    PURPOSE: 
-            Align the stacked images across filters
-
-    INPUTS:  
-           targname:  [string]  Name of the object your imaging
-                dir:  [string]  Directory where your fully reduced images are
-
+    PURPOSE:
+            To align images of differing filters to one another and saving the aligned images to a .fits. file.
+    INPUTS:
+                  [dir]:  (string)  General directory of the folders containing all of the data files
+             [targname]:  (string)  Name of the target you are aligning
+            [calfilter]:  (string)  Name of the filter you want to use as a reference for alignment
+    OPT. INPUTS:
+               [sigma]:  (float)    Confidence threshold for detections in the images (default is 4)
+            [standard]:  (boolean)  'True' if we are aligning the standard images, 'False' if we are aligningthe primary source of interest
     RETURNS:
-            median_image:  [np.array, float]  Aligned images saved in 'dir'.
-
-    AUTHOR:  
-            Connor E. Robinson
+            Writes the newly aligned images as a .fits file and saves to a new 'aligned' folder.
+    AUTHOR:
+            Julio M. Morales, December 10, 2021
     '''
 
-    # True if the alignment is for the standard images
-    if standard == True:
+    # True if we are aligning the primary source of interest
+    if (standard == False):
 
-        # Collect all the fully-reduced-stacked images
-        imlist = glob.glob(dir + 'Light Frame/standard/stacked/' + targname + '*.fits')
+        imtype = 'source'
 
-    # True if the alignment is for the source of interest
+    # True if we are aligning the standard images
     else:
 
-        # Collect all the fully-reduced-stacked images
-        imlist = glob.glob(dir + 'Light Frame/source/stacked/' + targname + '*.fits')
+        imtype = 'standard'
 
-    # Check to make sure that your new list has the right files:
-    print("All files to be aligned: \n", imlist)
-    print('\n')
+    # Collect the files that we will align
+    files = glob.glob(dir + 'Light Frame/' + imtype + '/stacked/*stack.fits')
 
-    # Open first image = master image; all other images of same target will be aligned to this one.
-    im1, hdr1 = fits.getdata(imlist[0], header = True)
-    print("Aligning all images to:", imlist[0])
-    print('\n')
+    for image in files:
 
-    xshifts = {}
-    yshifts = {}
+        # True if the images are in Blue or in Visual Bands
+        if (image == dir + 'Light Frame/' + imtype + '/stacked/' + targname + '_Blue stack.fits') or (image == dir + 'Light Frame/' + imtype + '/stacked/' + targname + '_Visual stack.fits'):
 
-    for index, filename in enumerate(imlist):
+            # Retrieve the data for the image that we will align to
+            calimage =  fits.getdata(dir + 'Light Frame/' + imtype + '/stacked/' + targname + '_Blue stack.fits')
+            print('Aligning ' + image + ' to ' + dir + 'Light Frame/' + imtype + '/stacked/' + targname + '_Blue stack.fits' + '\n')
 
-        # Pull the data from the images
-        im, hdr = fits.getdata(filename, header = True)
+        # True if the image is in the Red band
+        else:
 
-        # Shift the images using the cross-correlation method
-        xshifts[index], yshifts[index] = cross_image(im1, im, boxsize = 1000)
-        print("Shift for image", index, "is", xshifts[index], yshifts[index])
+            # Use the Visual filter to align the Red image (I believe this is neccesary since the aligning function can't identify enough similarities in the Blue and Red images to work, but it does
+            # work for the Visual and Red bands)
+            calimage =  fits.getdata(dir + 'Light Frame/' + imtype + '/aligned/' + targname + '_Visual aligned.fits')
+            print('Aligning ' + image + ' to ' + dir + 'Light Frame/' + imtype + '/aligned/' + targname + '_Visual aligned.fits' + '\n')
 
-    # Calculate trim edges of new median stacked images so all stacked images of each target have same size 
-    max_x_shift = int(np.max([xshifts[x] for x in xshifts.keys()]))
-    max_y_shift = int(np.max([yshifts[x] for x in yshifts.keys()]))
-    print('   Max x - shift = {0}, max y - shift = {1} (pixels)'.format(max_x_shift, max_y_shift))
-    print('\n')
+        # Convert the array from big eldien to little eldien (code breaks without this!)
+        calimage =  calimage.byteswap().newbyteorder()
 
-    scilist = imlist
+        # Pull the data from the images to be aligned
+        image_to_align = fits.getdata(image)
 
-    # Checks that the list of files is not empty 
-    if len(scilist) < 1:
-        print("Warning! No files in scilist. Your path is likely incorrect.")
+        # Pull the header info
+        header = fits.getheader(image)
 
-    # Number of files to be aligned
-    nfiles = len(scilist)
-    print('Aligning ', nfiles, ' science frames')
-    print('\n')
+        # Pull the filter from the header
+        filter = header['FILTER']
 
-    # Define new array with same size as master image
-    image_stack = np.zeros([im1.shape[0], im1.shape[1], len(scilist)])
+        # Convert the array from big eldien to little eldien (code breaks without this!)
+        image_to_align = image_to_align.byteswap().newbyteorder()
+        
+        # Execute the alignment (footprint is a boolean mask where True is an unphysical pixel)
+        img_aligned, footprint = aa.register(image_to_align, calimage, detection_sigma = sigma)
 
-    xshifts_filt = {}
-    yshifts_filt = {}
+        # Loop over all the pixels in the aligned image
+        for j in range(0, footprint.shape[0]):
 
-    # This loop completes the shifts for the rest of the images in relation to the master image
-    for index, filename in enumerate(scilist):
+            for i in range(0, footprint.shape[1]):
 
-        # Pull the data from the images
-        im, hdr = fits.getdata(filename, header = True)
+                # True if the pixel is nonphysical
+                if (footprint[j][i] == True):
 
-        # Pull the filter name
-        filter = hdr['FILTER']
+                    # Replace the nonphysical pixel with a NaN
+                    img_aligned[j][i] = np.nan
 
-        # Shift the images using the cross-correlation method
-        xshifts_filt[index], yshifts_filt[index] = cross_image(im1, im, boxsize = 1000)
+                # True if no NaN's are needed
+                else:
+                    pass
 
-        # Shift the image by calling on the shifting function
-        image_stack[:, :, index] = shift_image(im, xshifts_filt[index], yshifts_filt[index]) 
-        image_stacked  = image_stack[:, :, index]
-
-        # Trim the NaN's off the edges of the images
-        trimmed_image = image_stacked[0:4096 - 420, 0: 4096 - 420]
-
-        # Save the final stacked images into your new folder
-        fits.writeto(dir + targname + '_' + filter + ' aligned.fits', trimmed_image, header = hdr, overwrite = True)
-        print('   Wrote FITS file ', targname + '_' + filter + ' aligned.fits', 'in ', dir, '\n')
-        print('\n Done Aligning!')
+        # Write to a new fits file and sort into a new 'aligned' folder
+        fits.writeto(dir + 'Light Frame/' + imtype + '/' + targname + '_' + filter + ' aligned.fits', img_aligned, header = header, overwrite = True)
+        print('Writing the aligned ' + targname + '_' + filter + ' aligned.fits to ' + dir + 'Light Frame/' + imtype + '/aligned/' + '\n')
+        filesorter(targname + '_' + filter + ' aligned.fits', dir + 'Light Frame/' + imtype + '/', 'aligned')
+        print('\n')
 
     return
 
-###################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
 def science_file_sorter(dir, source_first_letter, standard_first_letter, is_standard = False):
 
@@ -611,18 +583,14 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter, is_stan
     PURPOSE: 
             Takes in the directory where all of the files taken reside, it then organizes the files by 
             calibration type, filter, exposure time, and by source vs. standard type.
-
     INPUTS:  
-                            dir:  [string]  Directory where all the files reside
-            source_first_letter:  [string]  The first letter(s) of the files taken for the primary source of interest
-          standard_first_letter:  [string]  The first letter(s) of the files taken for the standard star
-
+                            [dir]:  (string)  Directory where all the files reside
+            [source_first_letter]:  (string)  The first letter(s) of the files taken for the primary source of interest
+          [standard_first_letter]:  (string)  The first letter(s) of the files taken for the standard star
     OPT. INPUTS:
-                    is_standard:  [boolean]  True if you are trying to organize images of the standard star.  False if for the source.
-
+                    [is_standard]:  (boolean)  True if you are trying to organize images of the standard star.  False if for the source.
     RETURNS:
             Sorts all of the files into new directories.
-
     AUHTOR:
             Julio M. Morales, November 19, 2021
     '''
@@ -681,26 +649,22 @@ def science_file_sorter(dir, source_first_letter, standard_first_letter, is_stan
 
     return
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
-def source_image_calibrator(targname, first_letter, dir, filter, is_standard = False):
+def source_image_reducer(targname, first_letter, dir, filter, is_standard = False):
 
     '''
     PURPOSE:
             To bias-subtract, dark-subtract, flat-field, align, and stack the raw images of the primary source of interest.
-
     IMPUTS:
-                targname:  [string]  Name of the primary source of interest
-            first_letter:  [string]  First letter(s) of the files to be reduced
-                     dir:  [string]  Directory of files to be calibrated
-                  filter:  [string]  Name of the filter the frames were taken in
-
+                [targname]:  (string)  Name of the primary source of interest
+            [first_letter]:  (string)  First letter(s) of the files to be reduced
+                     [dir]:  (string)  Directory of files to be calibrated
+                  [filter]:  (string)  Name of the filter the frames were taken in
     OPT. INPUTS:
-             is_standard:  [boolean] True if you are trying to reduce images of the standard star.  False if for the source.
-
+             [is_standard]:  (boolean) True if you are trying to reduce images of the standard star.  False if for the source.
     RETURNS:
-            fully_reduced_image:  [np.array, float]  Fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
-
+             .fits file written with the fully reduced images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
     AUTHOR:
             Julio M. Morales, November 01, 2021
     '''
@@ -722,23 +686,20 @@ def source_image_calibrator(targname, first_letter, dir, filter, is_standard = F
 
     return
 
-#######################################################################################################################################################################################################################################################################
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
-def standard_image_calibrator(targname, first_letter, dir, filter):
+def standard_image_reducer(targname, first_letter, dir, filter):
 
     '''
     PURPOSE:
             To bias-subtract, dark-subtract, flat-field, align, and stack the raw images of the standard star.
-
     IMPUTS:
-                targname:  [string]  Name of the standard star
-            first_letter:  [string]  First letter(s) of the files to be reduced
-                     dir:  [string]  Directory of files to be calibrated
-                  filter:  [string]  Name of the filter the frames were taken in
-
+                [targname]:  (string)  Name of the standard star
+            [first_letter]:  (string)  First letter(s) of the files to be reduced
+                     [dir]:  (string)  Directory of files to be calibrated
+                  [filter]:  (string)  Name of the filter the frames were taken in
     RETURNS:
-            fully_reduced_standard_image:  [np.array, float]  Fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
-
+            .fits file writen with the fully calibrated images that have been bias, dark subtracted, flat-fielded, aligned, and stacked.
     AUTHOR:
             Julio M. Morales, November 01, 2021
     '''
@@ -766,3 +727,58 @@ def standard_image_calibrator(targname, first_letter, dir, filter):
     align_N_stack(targname, 'flat_fielded_', dir + 'Light Frame/standard/', filter)
 
     return
+
+###########################################################################################################################################################################################################################################################################################################################################################################################################################################
+
+def scale_filter(tmpimg, lowsig = -1. , highsig = 15.):
+
+    '''
+    PURPOSE:
+            The fuunction scales the filters to appropriate amount for the purpose of stacking the images to
+            make a false colored image.
+    INPUTS:
+            [tmpimg]:  (np.array, float)  Image to be scaled
+    
+    OPT. INPUTS:
+            [lowsig]:  (integer)  Lowest sigma  (default is -1)
+           [highsig]:  (integer)  Highest sigma (default is 15)
+    RETURNS:
+               [IMG]:  (np.array, float)  Scaled image
+    AUTHOR:
+            Connor E. Robinson
+    '''
+
+    # Subtract the median of the image
+    tmpimg -= np.nanmedian(tmpimg)
+    print('minmax 1: ', np.nanmin(tmpimg), np.nanmax(tmpimg))
+
+    # Sigma clip sources 2 sigma and above
+    tmpsig = stats.sigma_clipped_stats(tmpimg, sigma = 2, maxiters = 5)[2]
+    print('std: ', tmpsig)
+    print("lowsig, highsig: ", lowsig, highsig)
+    print('cuts: ', lowsig*tmpsig, highsig*tmpsig)
+
+    # Create histogram for the data
+    image_hist = plt.hist(tmpimg.flatten(), 1000, range = [-100, 100])
+ 
+    # Apply thresholding
+    tmpimg[np.where(tmpimg < lowsig*tmpsig)] = lowsig*tmpsig
+    tmpimg[np.where(tmpimg > highsig*tmpsig)] = highsig*tmpsig
+    print('minmax 2: ', np.nanmin(tmpimg),np.nanmax(tmpimg))
+
+    # Double hyperbolic arcsin scaling
+    tmpimg = np.arcsinh(tmpimg)
+    print('minmax 3: ', np.nanmin(tmpimg),np.nanmax(tmpimg))
+
+    # Scale to [0,255]
+    tmpimg += np.nanmin(tmpimg)
+    tmpimg *= 255./np.nanmax(tmpimg)
+    tmpimg[np.where(tmpimg < 0.)] = 0.
+    print('minmax 4: ', np.nanmin(tmpimg),np.nanmax(tmpimg))
+    
+    # Recast as unsigned integers for jpeg writer
+    IMG = Image.fromarray(np.uint8(tmpimg))
+    
+    print("")
+    
+    return IMG
