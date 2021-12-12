@@ -18,13 +18,6 @@ from astropy.stats import mad_std
 from astropy.stats import sigma_clip
 from PIL import Image
 
-!pip install photutils
-from photutils.utils import calc_total_error
-from photutils import aperture_photometry, CircularAperture, CircularAnnulus, DAOStarFinder
-
-!pip install astroalign
-import astroalign as aa
-
 %matplotlib inline
 
 ###########################################################################################################################################################################################################################################################################################################################################################################################################################################
