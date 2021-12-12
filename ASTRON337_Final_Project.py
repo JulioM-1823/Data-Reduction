@@ -12,7 +12,6 @@ import os
 import astropy.stats as stat
 from astropy.visualization import ZScaleInterval
 from astropy.stats import sigma_clipped_stats
-from astropy.io import fits 
 from astropy import stats
 from astropy.stats import mad_std
 from astropy.stats import sigma_clip
