@@ -1347,13 +1347,13 @@ def standard_photometry(dir, targname, filter_list, index, bm, ubm, vm, uvm, rm,
     color_err_3 = np.sqrt((fluxtable[filter_list[1] + 'mag_err'])**2 + (fluxtable[filter_list[2] + 'mag_err'])**2)
 
     # Apend the color data to the dataframe
-    fluxtable[filter_list[0] + '_' + filter_list[1] + '_color'] = color_1
+    fluxtable[filter_list[0] + '_' + filter_list[1] + '_color'] =     color_1
     fluxtable[filter_list[0] + '_' + filter_list[1] + '_color_err'] = color_err_1
 
-    fluxtable[filter_list[0] + '_' + filter_list[2] + '_color'] = color_2
+    fluxtable[filter_list[0] + '_' + filter_list[2] + '_color'] =     color_2
     fluxtable[filter_list[0] + '_' + filter_list[2] + '_color_err'] = color_err_2
 
-    fluxtable[filter_list[1] + '_' + filter_list[2] + '_color'] = color_3
+    fluxtable[filter_list[1] + '_' + filter_list[2] + '_color'] =     color_3
     fluxtable[filter_list[1] + '_' + filter_list[2] + '_color_err'] = color_err_3
 
     return fluxtable
