@@ -1168,7 +1168,7 @@ def standard_photometry(dir, targname, filter_list, index, bm, ubm, vm, uvm, rm,
   
  ###########################################################################################################################################################################################################################################################################################################################################################################################################################################
   
- def source_photometry(dir, targname, std_name, filter_list, standard_index, bm, ubm, vm, uvm, rm, urm):
+def source_photometry(dir, targname, std_name, filter_list, standard_index, bm, ubm, vm, uvm, rm, urm):
 
     '''
     PURPOSE:
