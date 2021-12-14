@@ -576,7 +576,7 @@ def align_filters(dir, targname, sigma = 4, standard = False):
         image_to_align = image_to_align.byteswap().newbyteorder()
         
         # Execute the alignment (footprint is a boolean mask where True is an unphysical pixel)
-        img_aligned, footprint = aa.register(image_to_align, calimage, detection_sigma = sigma)
+        img_aligned, footprint = register(image_to_align, calimage, detection_sigma = sigma)
 
         # Loop over all the pixels in the aligned image
         for j in range(0, footprint.shape[0]):
