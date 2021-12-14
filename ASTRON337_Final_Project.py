@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import glob as glob
+import glob
 import scipy
 import scipy.signal
 import scipy.ndimage.interpolation as interp
@@ -12,11 +12,22 @@ import os
 import astropy.stats as stat
 from astropy.visualization import ZScaleInterval
 from astropy.stats import sigma_clipped_stats
+from astropy.io import fits 
 from astropy import stats
 from astropy.stats import mad_std
 from astropy.stats import sigma_clip
 from PIL import Image
-from astropy.io import fits 
+
+!pip install photutils
+from photutils.utils import calc_total_error
+from photutils import aperture_photometry, CircularAperture, CircularAnnulus, DAOStarFinder
+
+!pip install astroalign
+from astroalign import register
+
+# Mount the Google drive
+from google.colab import drive
+drive.mount('/content/drive') 
 
 ###########################################################################################################################################################################################################################################################################################################################################################################################################################################
 
@@ -567,7 +578,7 @@ def align_filters(dir, targname, sigma = 4, standard = False):
         image_to_align = image_to_align.byteswap().newbyteorder()
         
         # Execute the alignment (footprint is a boolean mask where True is an unphysical pixel)
-        img_aligned, footprint = aa.register(image_to_align, calimage, detection_sigma = sigma)
+        img_aligned, footprint = register(image_to_align, calimage, detection_sigma = sigma)
 
         # Loop over all the pixels in the aligned image
         for j in range(0, footprint.shape[0]):
